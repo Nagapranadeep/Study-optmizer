@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>AI Smart Study Planner</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+body{
+margin:0;
+font-family:Segoe UI,Arial;
+background:linear-gradient(135deg,#667eea,#764ba2);
+min-height:100vh;
+}
+
+.container{
+max-width:1200px;
+margin:auto;
+padding:20px;
+}
+
+.dashboard{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+gap:20px;
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:15px;
+box-shadow:0 8px 20px rgba(0,0,0,0.15);
+}
+
+input,select{
+width:100%;
+padding:8px;
+margin-bottom:10px;
+border-radius:6px;
+border:1px solid #ccc;
+}
+
+button{
+padding:10px;
+border:none;
+border-radius:8px;
+background:#667eea;
+color:white;
+cursor:pointer;
+}
+
+button:hover{
+opacity:.9;
+}
+
+.progress{
+background:#ddd;
+height:20px;
+border-radius:20px;
+overflow:hidden;
+}
+
+.progress-bar{
+background:#2ecc71;
+height:100%;
+width:0%;
+}
+
+.chatbox{
+height:200px;
+overflow:auto;
+border:1px solid #ccc;
+padding:10px;
+margin-bottom:10px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+}
+
+td,th{
+border:1px solid #ccc;
+padding:6px;
+text-align:center;
+}
+
+.dark{
+background:#121212;
+color:white;
+}
+
+.dark .card{
+background:#1e1e1e;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN PAGE -->
+
+<div id="authPage" class="container">
+
+<h1>Login / Register</h1>
+
+<div class="dashboard">
+
+<div class="card">
+
+<h2>Register</h2>
+
+<input id="regName" placeholder="Name">
+<input id="regEmail" placeholder="Email">
+<input id="regPass" type="password" placeholder="Password">
+
+<button onclick="registerUser()">Register</button>
+
+</div>
+
+<div class="card">
+
+<h2>Login</h2>
+
+<input id="loginEmail" placeholder="Email">
+<input id="loginPass" type="password" placeholder="Password">
+
+<button onclick="loginUser()">Login</button>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- MAIN APP -->
+
+<div id="mainApp" style="display:none">
+
+<div class="container">
+
+<h1>🧠 AI Smart Study Planner</h1>
+
+<button onclick="toggleTheme()">Dark Mode</button>
+
+<div class="dashboard">
+
+<!-- ADD SUBJECT -->
+
+<div class="card">
+
+<h2>Add Subject</h2>
+
+<input id="subject" placeholder="Subject Name">
+<input type="date" id="examDate">
+
+<select id="difficulty">
+<option value="1">Easy</option>
+<option value="2">Medium</option>
+<option value="3">Hard</option>
+</select>
+
+<input id="hours" type="number" placeholder="Study Hours">
+
+<button onclick="addSubject()">Add Subject</button>
+<button onclick="resetPlanner()">Reset Planner</button>
+
+</div>
+
+<!-- DAILY PLAN -->
+
+<div class="card">
+
+<h2>Daily Timetable</h2>
+
+<ul id="timetable"></ul>
+
+<button onclick="generateTimetable()">Generate</button>
+
+</div>
+
+<!-- WEEKLY PLAN -->
+
+<div class="card">
+
+<h2>Weekly Plan</h2>
+
+<table>
+
+<tr><th>Day</th><th>Subjects</th></tr>
+
+<tr><td>Mon</td><td id="mon"></td></tr>
+<tr><td>Tue</td><td id="tue"></td></tr>
+<tr><td>Wed</td><td id="wed"></td></tr>
+<tr><td>Thu</td><td id="thu"></td></tr>
+<tr><td>Fri</td><td id="fri"></td></tr>
+<tr><td>Sat</td><td id="sat"></td></tr>
+<tr><td>Sun</td><td id="sun"></td></tr>
+
+</table>
+
+<button onclick="generateWeekly()">Generate</button>
+
+</div>
+
+<!-- PIE CHART -->
+
+<div class="card">
+
+<h2>Study Distribution</h2>
+
+<canvas id="chart"></canvas>
+
+</div>
+
+<!-- ANALYTICS -->
+
+<div class="card">
+
+<h2>Productivity</h2>
+
+<canvas id="analyticsChart"></canvas>
+
+</div>
+
+<!-- PROGRESS -->
+
+<div class="card">
+
+<h2>Progress</h2>
+
+<div class="progress">
+<div id="progressBar" class="progress-bar"></div>
+</div>
+
+<button onclick="updateProgress()">Study Session Done</button>
+
+</div>
+
+<!-- MOTIVATION -->
+
+<div class="card">
+
+<h2>Motivation</h2>
+
+<p id="quote"></p>
+
+</div>
+
+<!-- CHATBOT -->
+
+<div class="card">
+
+<h2>AI Study Assistant</h2>
+
+<div id="chatBox" class="chatbox"></div>
+
+<input id="chatInput" placeholder="Ask study question">
+
+<button onclick="sendMessage()">Send</button>
+
+</div>
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+/* LOGIN SYSTEM */
+
+function registerUser(){
+
+let name=regName.value
+let email=regEmail.value
+let pass=regPass.value
+
+localStorage.setItem("user",JSON.stringify({name,email,pass}))
+
+alert("Registered Successfully")
+
+}
+
+function loginUser(){
+
+let email=loginEmail.value
+let pass=loginPass.value
+
+let user=JSON.parse(localStorage.getItem("user"))
+
+if(user && user.email===email && user.pass===pass){
+
+authPage.style.display="none"
+mainApp.style.display="block"
+
+loadSubjects()
+
+}else{
+
+alert("Invalid login")
+
+}
+
+}
+
+/* DATA */
+
+let subjects=[]
+let progress=0
+let sessions=[]
+
+/* ADD SUBJECT */
+
+function addSubject(){
+
+let name=subject.value
+let hoursNeeded=parseInt(hours.value)
+
+subjects.push({name,hours:hoursNeeded})
+
+localStorage.setItem("subjects",JSON.stringify(subjects))
+
+updateChart()
+
+}
+
+/* LOAD SUBJECTS */
+
+function loadSubjects(){
+
+let data=localStorage.getItem("subjects")
+
+if(data){
+
+subjects=JSON.parse(data)
+
+updateChart()
+
+}
+
+}
+
+/* DAILY TIMETABLE */
+
+function generateTimetable(){
+
+timetable.innerHTML=""
+
+subjects.forEach(s=>{
+
+let li=document.createElement("li")
+
+li.textContent=s.name+" : "+s.hours+" hrs"
+
+timetable.appendChild(li)
+
+})
+
+}
+
+/* WEEKLY PLAN */
+
+function generateWeekly(){
+
+let days=["mon","tue","wed","thu","fri","sat","sun"]
+
+days.forEach(d=>document.getElementById(d).innerText="")
+
+let queue=[]
+
+subjects.forEach(s=>{
+for(let i=0;i<s.hours;i++){
+queue.push(s.name)
+}
+})
+
+let i=0
+
+queue.forEach(sub=>{
+
+let day=days[i%7]
+
+document.getElementById(day).innerText+=sub+" "
+
+i++
+
+})
+
+}
+
+/* PROGRESS */
+
+function updateProgress(){
+
+progress+=10
+if(progress>100) progress=100
+
+progressBar.style.width=progress+"%"
+
+sessions.push(progress)
+
+updateAnalytics()
+
+}
+
+/* PIE CHART */
+
+let chart
+
+function updateChart(){
+
+let labels=subjects.map(s=>s.name)
+let data=subjects.map(s=>s.hours)
+
+if(chart) chart.destroy()
+
+chart=new Chart(document.getElementById("chart"),{
+
+type:"pie",
+
+data:{
+labels:labels,
+datasets:[{
+data:data
+}]
+}
+
+})
+
+}
+
+/* ANALYTICS */
+
+let analyticsChart
+
+function updateAnalytics(){
+
+if(analyticsChart) analyticsChart.destroy()
+
+analyticsChart=new Chart(document.getElementById("analyticsChart"),{
+
+type:"bar",
+
+data:{
+labels:sessions.map((_,i)=>"Session "+(i+1)),
+datasets:[{
+label:"Progress %",
+data:sessions
+}]
+}
+
+})
+
+}
+
+/* RESET */
+
+function resetPlanner(){
+
+subjects=[]
+progress=0
+sessions=[]
+
+localStorage.removeItem("subjects")
+
+progressBar.style.width="0%"
+
+if(chart) chart.destroy()
+if(analyticsChart) analyticsChart.destroy()
+
+}
+
+/* DARK MODE */
+
+function toggleTheme(){
+
+document.body.classList.toggle("dark")
+
+}
+
+/* MOTIVATION */
+
+let quotes=[
+"Small progress daily = big success.",
+"Consistency beats intensity.",
+"Focus on your goals.",
+"Hard work beats talent.",
+"Discipline leads to success."
+]
+
+function changeQuote(){
+
+quote.innerText=quotes[Math.floor(Math.random()*quotes.length)]
+
+}
+
+changeQuote()
+
+setInterval(changeQuote,20000)
+
+/* CHATBOT */
+
+let tips=[
+
+"Study using the 50/10 focus technique.",
+"Revise notes before sleeping.",
+"Practice past exam papers.",
+"Break subjects into small topics.",
+"Teach someone else to remember better."
+
+]
+
+function sendMessage(){
+
+let msg=chatInput.value.toLowerCase()
+
+chatBox.innerHTML+=`<p><b>You:</b> ${msg}</p>`
+
+let reply=""
+
+if(msg.includes("study")) reply=tips[Math.floor(Math.random()*tips.length)]
+else if(msg.includes("exam")) reply="Start revision at least 2 weeks before exams."
+else if(msg.includes("motivation")) reply=quotes[Math.floor(Math.random()*quotes.length)]
+else reply="Ask me about study tips, exams, or planning."
+
+chatBox.innerHTML+=`<p><b>AI:</b> ${reply}</p>`
+
+chatBox.scrollTop=chatBox.scrollHeight
+
+chatInput.value=""
+
+}
+
+</script>
+
+</body>
+</html>
